@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
+import Notification from './components/Notification'
+import NotificationE from './components/NotificationE'
 import axios from 'axios'
 import noteServices from './services/note'
 import note from './services/note'
@@ -11,6 +13,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [search, setSearch] = useState('')
+  const [success, setSuccess] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     noteServices.getAll().then(notes => setPersons(notes))
@@ -34,6 +38,7 @@ const App = () => {
   }
 
   const filtered = persons.filter((person) => person.name.toLowerCase().includes(search.toLowerCase()))
+  const isGreen = true
 
 
 
@@ -46,8 +51,20 @@ const App = () => {
         {
           const newObj = {...exists, number: newNumber}
           noteServices.update(exists.id, newObj)
-          .then(response => setPersons(persons.map( p => p.id !== response.id ? p : response )))
-          .catch(error => alert(error))
+          .then(response => {
+            setSuccess(`replaced number for ${response.name}`)
+            setTimeout(() => {
+              setSuccess(null)
+            }, 5000)
+            setPersons(persons.map( p => p.id !== response.id ? p : response))
+          })
+          .catch(e => {
+            setError(`Information of ${newObj.name} has already been removed from server`)
+            setTimeout(() => {
+              setError(null)
+            }, 5000)
+            setPersons(persons.filter(p => p.id !== newObj.id))
+          })
 
           setNewName('')
           setNewNumber('')
@@ -60,8 +77,14 @@ const App = () => {
         number: newNumber,
       }
 
-      noteServices.create(val).then(note => setPersons(persons.concat(note)))
-        .catch(error => alert(error))
+      noteServices.create(val).then(note => {
+        setSuccess(`added ${note.name}`)
+        setTimeout(() => {
+          setSuccess(null)
+        }, 5000)
+        setPersons(persons.concat(note))
+      })
+        .catch(e => alert(e))
 
       setNewName('')
       setNewNumber('')
@@ -83,6 +106,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={success}/>
+      <NotificationE message={error}/>
       <Filter search={search} onChange={handleSearchInput} />
       <h2>add a new</h2>
       <PersonForm
